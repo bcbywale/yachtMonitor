@@ -8,5 +8,7 @@ Working on a python front end to run on a laptop to display sensor data from ard
 This will include as a start:
 
 House Battery Bank Voltage
-House Batteryu Bank Amp Draw
+
+House Battery Bank Amp Draw
+
 Starting Battery Bank Voltage
