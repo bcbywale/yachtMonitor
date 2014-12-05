@@ -1,12 +1,13 @@
 <data>
     <connection name="Serial">
         <port>"COM3"</port>
+        <baud>9800</baud>
     </connection>
     <connection name="TCP">
         <DHCP>0</DHCP>
         <address>"192.168.0.2"</address>
     </connection>
-    <state>
-        <activeConnection>"Serial"</activeConnection>
+    <state name = "test">
+        <connection>"Serial"</connection>
     </state>
 </data>
