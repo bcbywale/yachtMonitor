@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
+from time import sleep
+import serial
 import xml.etree.ElementTree as ET
 import os
 
@@ -8,6 +10,9 @@ configFilename = os.path.join(configDir, 'config.xml')
 configTree = ET.parse(configFilename)
 configRoot = configTree.getroot()
 
+#Setup Serial connection based on config file
+ser = serial.Serial(3)
+ser.baudrate = 9600
 
 def calculate(*args):
     try:
@@ -38,6 +43,11 @@ def configure():
 #Before we do anything, let's load the configuration
 loadConfig()
 
+def update():
+    root.update()
+    reading.set(ser.readline())
+    sleep(1)
+
 if __name__ == "__main__":
 
     root = tk.Tk()
@@ -54,10 +64,9 @@ if __name__ == "__main__":
     menubar.add_command(label="Quit!", command=root.quit)
     root.config(menu=menubar)
 
-
-
     feet = tk.StringVar()
     meters = tk.StringVar()
+    reading = tk.StringVar()
 
     feet_entry = ttk.Entry(mainframe, width=7, textvariable=feet)
     feet_entry.grid(column=2, row=1, sticky=(tk.W, tk.E))
@@ -67,10 +76,11 @@ if __name__ == "__main__":
 
     ttk.Label(mainframe, text="feet").grid(column=3, row=1, sticky=tk.W)
     ttk.Label(mainframe, text="is equivalent to").grid(column=1, row=2, sticky=tk.E)
-    ttk.Label(mainframe, text="meters").grid(column=3, row=2, sticky=tk.W)
+    ttk.Label(mainframe, text=reading).grid(column=3, row=2, sticky=tk.W)
 
     for child in mainframe.winfo_children(): child.grid_configure(padx=5, pady=5)
 
     feet_entry.focus()
 
+    root.after(1, update)
     root.mainloop()
