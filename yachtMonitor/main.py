@@ -1,9 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
-from time import sleep
+import time
 import serial
 import xml.etree.ElementTree as ET
 import os
+import tkinter.scrolledtext as tkst
 
 configDir = os.path.dirname(__file__)
 configFilename = os.path.join(configDir, 'config.xml')
@@ -11,15 +12,10 @@ configTree = ET.parse(configFilename)
 configRoot = configTree.getroot()
 
 #Setup Serial connection based on config file
-ser = serial.Serial(3)
-ser.baudrate = 9600
-
-def calculate(*args):
-    try:
-        value = float(feet.get())
-        meters.set((0.3048 * value * 10000.0 + 0.5)/10000.0)
-    except ValueError:
-        pass
+try:
+    ser = serial.Serial(3,9600)
+except serial.SerialException:
+    print("No serial connection available")
 
 def loadConfig():
     global configTree, configRoot
@@ -44,43 +40,66 @@ def configure():
 loadConfig()
 
 def update():
-    root.update()
-    reading.set(ser.readline())
-    sleep(1)
-
+    #Update the time
+    timeStr = time.strftime("%I:%M:%S",time.localtime(time.time()))
+    timeLabel.configure(text="Time: " +timeStr)
+    timeLabel.after(1000, update)
+    
+    #Update the guages
+    
+    #Update the alarms
+    alarmText.config(state=tk.NORMAL)
+    #Display only alarms that haven't been displayed before
+    #Start as unankloweded and alarming
+    #Check for awklodgement
+    #Clear when possible after being awklodged
+    #alarmText.insert('1.0', "COM port not available\n")
+    #alarmText.insert('1.0', "Fuel low\n")
+    alarmText.config(state=tk.DISABLED)
+    
 if __name__ == "__main__":
 
     root = tk.Tk()
+    root.grid_rowconfigure(0,weight=1)
+    root.grid_columnconfigure(0,weight=1)
 
     root.title("Yacht Monitor V0.1")
-
+    dir = os.path.dirname(__file__)
+    root.iconbitmap(default=os.path.join(dir, 'icon.ico'))
+    
     mainframe = ttk.Frame(root, padding="3 3 12 12")
-    mainframe.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
-    mainframe.columnconfigure(0, weight=1)
-    mainframe.rowconfigure(0, weight=1)
+    mainframe.grid(column=0, row=0, sticky=(tk.NSEW))
+    mainframe.grid_columnconfigure(0, weight=1)
+    mainframe.grid_rowconfigure(0, weight=1)
 
     menubar = tk.Menu(root)
     menubar.add_command(label="Configure", command=configure)
     menubar.add_command(label="Quit!", command=root.quit)
     root.config(menu=menubar)
 
-    feet = tk.StringVar()
-    meters = tk.StringVar()
-    reading = tk.StringVar()
+    hVoltage = tk.StringVar()
+    hVoltage.set('12.7')
+    
+    #Build hVoltageGuage and add Static Components
+    hVoltageCanvas = tk.Canvas(mainframe,width=300, height=100)
+    hVoltageCanvas.grid(column=0, row =0, sticky=(tk.NW))
+    hVoltageCanvas.create_rectangle(10,10,300,50)
 
-    feet_entry = ttk.Entry(mainframe, width=7, textvariable=feet)
-    feet_entry.grid(column=2, row=1, sticky=(tk.W, tk.E))
+    hVoltageLabel = ttk.Label(mainframe, text="House Bank Voltage = " +hVoltage.get())
+    hVoltageLabel.grid(column=0, row=1,sticky=(tk.NW))
 
-    ttk.Label(mainframe, textvariable=meters).grid(column=2, row=2, sticky=(tk.W, tk.E))
-    ttk.Button(mainframe, text="Calculate", command=calculate).grid(column=3, row=3, sticky=tk.W)
+    alarmFrame = ttk.LabelFrame(mainframe, text="Alarm Summary",padding=(6, 6, 12, 12))
+    alarmFrame.grid(column=0,row=2, sticky=tk.NSEW, columnspan=2)
+    alarmFrame.grid_columnconfigure(0, weight=1)
+    alarmFrame.grid_rowconfigure(0, weight=1)
+    
+    alarmText = tkst.ScrolledText(alarmFrame,width=100,height=5)
+    alarmText.grid(row=0,column=0,sticky=tk.NSEW)
 
-    ttk.Label(mainframe, text="feet").grid(column=3, row=1, sticky=tk.W)
-    ttk.Label(mainframe, text="is equivalent to").grid(column=1, row=2, sticky=tk.E)
-    ttk.Label(mainframe, text=reading).grid(column=3, row=2, sticky=tk.W)
 
-    for child in mainframe.winfo_children(): child.grid_configure(padx=5, pady=5)
+    timeLabel = ttk.Label(mainframe)
+    timeLabel.grid(column=1,row=4,sticky=(tk.W))
 
-    feet_entry.focus()
-
-    root.after(1, update)
+    #for child in mainframe.winfo_children(): child.grid_configure(padx=5, pady=5)
+    update()
     root.mainloop()
