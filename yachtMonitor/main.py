@@ -5,6 +5,7 @@ import serial
 import xml.etree.ElementTree as ET
 import os
 import tkinter.scrolledtext as tkst
+import threading
 
 configDir = os.path.dirname(__file__)
 configFilename = os.path.join(configDir, 'config.xml')
@@ -13,9 +14,15 @@ configRoot = configTree.getroot()
 
 #Setup Serial connection based on config file
 try:
-    ser = serial.Serial(3,9600)
+    ser = serial.Serial(port =3, baudrate=9600)
+    print("connected to: " + ser.portstr)
 except serial.SerialException:
     print("No serial connection available")
+
+def read_from_port(ser, hVoltage):
+        while True:
+            reading = ser.readline().decode()
+            hVoltage.set(reading)
 
 def loadConfig():
     global configTree, configRoot
@@ -44,6 +51,10 @@ def update():
     timeStr = time.strftime("%I:%M:%S",time.localtime(time.time()))
     timeLabel.configure(text="Time: " +timeStr)
     timeLabel.after(1000, update)
+    
+    #Update the values
+    hVoltageLabel.configure(text="House Bank Voltage = " + hVoltage.get())
+    print(hVoltage.get())
     
     #Update the guages
     
@@ -78,8 +89,7 @@ if __name__ == "__main__":
     root.config(menu=menubar)
 
     hVoltage = tk.StringVar()
-    hVoltage.set('12.7')
-    
+        
     #Build hVoltageGuage and add Static Components
     hVoltageCanvas = tk.Canvas(mainframe,width=300, height=100)
     hVoltageCanvas.grid(column=0, row =0, sticky=(tk.NW))
@@ -101,5 +111,8 @@ if __name__ == "__main__":
     timeLabel.grid(column=1,row=4,sticky=(tk.W))
 
     #for child in mainframe.winfo_children(): child.grid_configure(padx=5, pady=5)
+    thread = threading.Thread(target=read_from_port, args=(ser, hVoltage))
+    thread.daemon = True
+    thread.start()
     update()
     root.mainloop()
