@@ -1,7 +1,7 @@
 yachtMonitor
 ============
 
-Python GUI for Arduino Yacht Monitor Hardware
+Python GUI for Arduino Yacht Monitor Hardware (https://github.com/bcbywale/yachtSensor.git)
 
 Working on a python front end to run on a laptop to display sensor data from arduino based yacht monitoring hardware.
 
