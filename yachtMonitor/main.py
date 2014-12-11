@@ -17,6 +17,8 @@ configRoot = configTree.getroot()
 
 connectionStatus = "offline"
 
+hVoltageFloat = 0.0
+
 def read_from_port(ser, hVoltage):
 		while True:
 			reading = ser.readline().decode()
@@ -81,10 +83,10 @@ def reviewAlarms():
 	acknButton.config(style='TButton')
 	acknButton.state(["disabled"])
 
-i = 0
+j = 0
 
 def update():
-	global i
+	global j, hVoltageFloat
 
 	#Update the time
 	timeStr = time.strftime("%I:%M:%S",time.localtime(time.time()))
@@ -92,11 +94,38 @@ def update():
 	timeLabel.after(1000, update)
 
 	#Update the values
-	hVoltageLabel.configure(text="House Bank Voltage = " + hVoltage.get())
-	if hVoltageFloat < 10:
+	hVoltageCanvas.itemconfig(hVoltageRecLabel,text=hVoltage.get())
+	
+	if hVoltageFloat < 12.0:
 		alarms.append(Alarm("House bank voltage low.\n",1,0,1,False,"Monitor"))
-
+ 
 	#Update the guages
+	if hVoltageFloat >12.7:
+		recColor = 10
+	elif hVoltageFloat >12.6:
+		recColor = 9
+	elif hVoltageFloat >12.5:
+		recColor = 8
+	elif hVoltageFloat >12.4:
+		recColor = 7
+	elif hVoltageFloat >12.3:
+		recColor = 6
+	elif hVoltageFloat >12.2:
+		recColor = 5
+	elif hVoltageFloat >12.1:
+		recColor = 4
+	elif hVoltageFloat >12.0:
+		recColor = 3
+	elif hVoltageFloat >11.9:
+		recColor = 2
+	elif hVoltageFloat >11.8:
+		recColor = 1
+	else:
+		recColor = 0
+ 		
+	for i, rec in enumerate(hVoltageRec): 
+		if i < recColor: 
+			hVoltageCanvas.itemconfig(hVoltageRec[i],fill="green")
 
 	#Update the alarms
 	alarmText.config(state=tk.NORMAL)
@@ -110,8 +139,8 @@ def update():
 			acknButton.config(style='acknButton.TButton')
 			acknButton.state(["!disabled"])
 	alarmText.config(state=tk.DISABLED)
-	i = i + 1
-	if i == 10:
+	j = j + 1
+	if j == 10:
 		alarms.append(Alarm("10 Seconds has elapsed\n",1,1,1,False,"Monitor"))
 
 if __name__ == "__main__":
@@ -141,9 +170,10 @@ if __name__ == "__main__":
 	dir = os.path.dirname(__file__)
 	root.iconbitmap(default=os.path.join(dir, 'icon.ico'))
 
-	mainframe = ttk.Frame(root, padding="3 3 12 12")
+	mainframe = ttk.Frame(root, padding="5 5 12 12")
 	mainframe.grid(column=0, row=0, sticky=(tk.NSEW))
 	mainframe.grid_columnconfigure(0, weight=1)
+	mainframe.grid_columnconfigure(1, weight=1)
 	mainframe.grid_rowconfigure(0, weight=1)
 
 	menubar = tk.Menu(root)
@@ -152,14 +182,28 @@ if __name__ == "__main__":
 	root.config(menu=menubar)
 
 	hVoltage = tk.StringVar()
-
+	
+	hVoltageRec = []
+	
 	#Build hVoltageGuage and add Static Components
-	hVoltageCanvas = tk.Canvas(mainframe,width=300, height=100)
+	hVoltageCanvas = tk.Canvas(mainframe,width=500, height=100)
 	hVoltageCanvas.grid(column=0, row =0, sticky=(tk.NW))
-	hVoltageCanvas.create_rectangle(10,10,300,50)
+	hVoltageRec.append(hVoltageCanvas.create_rectangle(20,20,40,50))
+	hVoltageRec.append(hVoltageCanvas.create_rectangle(40,20,60,50))
+	hVoltageRec.append(hVoltageCanvas.create_rectangle(60,20,80,50))
+	hVoltageRec.append(hVoltageCanvas.create_rectangle(80,20,100,50))
+	hVoltageRec.append(hVoltageCanvas.create_rectangle(100,20,120,50))
+	hVoltageRec.append(hVoltageCanvas.create_rectangle(120,20,140,50))
+	hVoltageRec.append(hVoltageCanvas.create_rectangle(140,20,160,50))
+	hVoltageRec.append(hVoltageCanvas.create_rectangle(160,20,180,50))
+	hVoltageRec.append(hVoltageCanvas.create_rectangle(180,20,200,50))
+	hVoltageRec.append(hVoltageCanvas.create_rectangle(200,20,220,50))
+	
+	hVoltageRecTitle = hVoltageCanvas.create_text(125,10,text="House Bank Voltage")
+	hVoltageRecLabel = hVoltageCanvas.create_text(230,35,text=hVoltage.get(), anchor = tk.W)
+	hVoltageRecLabelMin = hVoltageCanvas.create_text(20,60,text="11.7 V")
+	hVoltageRecLabelMax = hVoltageCanvas.create_text(220,60,text="12.8 V")
 
-	hVoltageLabel = ttk.Label(mainframe, text="House Bank Voltage = " +hVoltage.get())
-	hVoltageLabel.grid(column=0, row=1,sticky=(tk.NW))
 
 	alarmFrame = ttk.LabelFrame(mainframe, text="Alarm Summary",padding=(6, 6, 12, 12))
 	alarmFrame.grid(column=0,row=2, sticky=tk.NSEW, columnspan=2)
@@ -177,7 +221,7 @@ if __name__ == "__main__":
 	acknButton.grid(row=0, column=1, sticky=tk.NS )
 
 	timeLabel = ttk.Label(mainframe)
-	timeLabel.grid(column=1,row=4,sticky=(tk.W))
+	timeLabel.grid(column=1,row=4,sticky=(tk.E))
 
 	#if serial connection is available start thread listening to it
 	if connectionStatus == "serial":
