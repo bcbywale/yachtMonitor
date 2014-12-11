@@ -14,15 +14,6 @@ configRoot = configTree.getroot()
 
 connectionStatus = "offline"
 
-#Setup Serial connection based on config file
-try:
-    ser = serial.Serial(port =3, baudrate=9600)
-    print("connected to: " + ser.portstr +"\n")
-    connectionStatus = "serial"
-except serial.SerialException:
-    print("No serial connection available\n")
-    connectionStatus = "offline"
-
 def read_from_port(ser, hVoltage):
         while True:
             reading = ser.readline().decode()
@@ -179,7 +170,7 @@ if __name__ == "__main__":
     acknButtonStyle = ttk.Style()
     acknButtonStyle.configure('acknButton.TButton', foreground="red")
 
-    acknButton = ttk.Button(alarmFrame,  text="Ackn", command=reviewAlarms)
+    acknButton = ttk.Button(alarmFrame,  text="Ackn", command=reviewAlarms, state=tk.DISABLED)
     acknButton.grid(row=0, column=1, sticky=tk.NS )
 
     timeLabel = ttk.Label(mainframe)
