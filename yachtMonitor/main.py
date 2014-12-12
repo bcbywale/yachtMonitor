@@ -98,7 +98,8 @@ def update():
 	
 	if hVoltageFloat < 12.0:
 		alarms.append(Alarm("House bank voltage low.\n",1,0,1,False,"Monitor"))
- 
+	
+	print(hVoltageFloat)
 	#Update the guages
 	if hVoltageFloat >12.7:
 		recColor = 10
@@ -147,8 +148,6 @@ if __name__ == "__main__":
 
 	#generator list of alarms
 	alarms = []
-
-	hVoltageFloat = 12.0
 
 	#Setup Serial connection based on config file
 	try:
