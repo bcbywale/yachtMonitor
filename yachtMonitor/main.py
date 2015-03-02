@@ -17,13 +17,12 @@ configRoot = configTree.getroot()
 
 connectionStatus = "offline"
 
-hVoltageFloat = 0.0
-
 def read_from_port(ser, hVoltage):
 		while True:
 			reading = ser.readline().decode()
+			
 			hVoltage.set(reading)
-			hVoltageFloat = float(reading)
+			hVoltageFloat.value = float(reading)
 
 def loadConfig():
 	global configTree, configRoot
@@ -48,8 +47,11 @@ def configure():
 loadConfig()
 
 #Alarm Class TODO: Going to need to expand class to be an alarm point so that alarms are associated with variables!
-class Alarm(object):
-	def __init__(self, text=None, status=None, type=None, buzzer=None, display = None, source = None):
+class AlarmPoint(object):
+	def __init__(self, value=None, lowerLimit=None, upperLimit=None, text=None, status=None, type=None, buzzer=None, display = None, source = None):
+		self.value = value
+		self.lowerLimit = lowerLimit
+		self.upperLimit = upperLimit
 		self.text = text #text describing the alarm
 		self.status = status #is alarm still active? 1 yes 0 no
 		self.type = type #is alarm a warning or a fault, faults cannot be removed by acknoledgement, 1 is fault, 0 is warning
@@ -57,7 +59,7 @@ class Alarm(object):
 		self.display = display #has this been displayed?
 		self.source = source #did this alarm come from the sensor or the monitor
 
-	def ack():
+	def ack(self):
 		if type == 1:
 			status = 0
 			buzzer = 0
@@ -83,10 +85,19 @@ def reviewAlarms():
 	acknButton.config(style='TButton')
 	acknButton.state(["disabled"])
 
+alarmPoints = []
+#define external alarms
+hVoltage = AlarmPoint(0.0,11.8,12.7,"House bank voltage low.\n",1,0,1,False,"Monitor")
+alarmPoints.append(hVoltage)
+
+#define internal alarms
+connectionStatus = AlarmPoint
+
+
 j = 0
 
 def update():
-	global j, hVoltageFloat
+	global j
 
 	#Update the time
 	timeStr = time.strftime("%I:%M:%S",time.localtime(time.time()))
@@ -95,38 +106,6 @@ def update():
 
 	#Update the values
 	hVoltageCanvas.itemconfig(hVoltageRecLabel,text=hVoltage.get())
-	
-	if hVoltageFloat < 12.0:
-		alarms.append(Alarm("House bank voltage low.\n",1,0,1,False,"Monitor"))
-	
-	print(hVoltageFloat)
-	#Update the guages
-	if hVoltageFloat >12.7:
-		recColor = 10
-	elif hVoltageFloat >12.6:
-		recColor = 9
-	elif hVoltageFloat >12.5:
-		recColor = 8
-	elif hVoltageFloat >12.4:
-		recColor = 7
-	elif hVoltageFloat >12.3:
-		recColor = 6
-	elif hVoltageFloat >12.2:
-		recColor = 5
-	elif hVoltageFloat >12.1:
-		recColor = 4
-	elif hVoltageFloat >12.0:
-		recColor = 3
-	elif hVoltageFloat >11.9:
-		recColor = 2
-	elif hVoltageFloat >11.8:
-		recColor = 1
-	else:
-		recColor = 0
- 		
-	for i, rec in enumerate(hVoltageRec): 
-		if i < recColor: 
-			hVoltageCanvas.itemconfig(hVoltageRec[i],fill="green")
 
 	#Update the alarms
 	alarmText.config(state=tk.NORMAL)
@@ -141,8 +120,6 @@ def update():
 			acknButton.state(["!disabled"])
 	alarmText.config(state=tk.DISABLED)
 	j = j + 1
-	if j == 10:
-		alarms.append(Alarm("10 Seconds has elapsed\n",1,1,1,False,"Monitor"))
 
 if __name__ == "__main__":
 
@@ -159,7 +136,8 @@ if __name__ == "__main__":
 		connectionStatus = "offline"
 
 	if connectionStatus == "offline":
-		alarms.append(Alarm("No connection available. Restart required to clear.",1,0,1,False,"Monitor"))
+		#connection.alarm("No connection")
+		pass
 
 	root = tk.Tk()
 	root.grid_rowconfigure(0,weight=1)
@@ -181,9 +159,9 @@ if __name__ == "__main__":
 	root.config(menu=menubar)
 
 	hVoltage = tk.StringVar()
-	
+
 	hVoltageRec = []
-	
+
 	#Build hVoltageGuage and add Static Components
 	hVoltageCanvas = tk.Canvas(mainframe,width=500, height=100)
 	hVoltageCanvas.grid(column=0, row =0, sticky=(tk.NW))
@@ -197,7 +175,7 @@ if __name__ == "__main__":
 	hVoltageRec.append(hVoltageCanvas.create_rectangle(160,20,180,50))
 	hVoltageRec.append(hVoltageCanvas.create_rectangle(180,20,200,50))
 	hVoltageRec.append(hVoltageCanvas.create_rectangle(200,20,220,50))
-	
+
 	hVoltageRecTitle = hVoltageCanvas.create_text(125,10,text="House Bank Voltage")
 	hVoltageRecLabel = hVoltageCanvas.create_text(230,35,text=hVoltage.get(), anchor = tk.W)
 	hVoltageRecLabelMin = hVoltageCanvas.create_text(20,60,text="11.7 V")
@@ -224,7 +202,7 @@ if __name__ == "__main__":
 
 	#if serial connection is available start thread listening to it
 	if connectionStatus == "serial":
-		thread = threading.Thread(target=read_from_port, args=(ser, hVoltage))
+		thread = threading.Thread(target=read_from_port, args=(ser, alarmPoints))
 		thread.daemon = True
 		thread.start()
 
