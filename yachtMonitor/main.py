@@ -20,7 +20,7 @@ connectionStatus = "offline"
 def read_from_port(ser, hVoltage):
 		while True:
 			reading = ser.readline().decode()
-			
+
 			hVoltage.set(reading)
 			hVoltageFloat.value = float(reading)
 
@@ -105,7 +105,7 @@ def update():
 	timeLabel.after(1000, update)
 
 	#Update the values
-	hVoltageCanvas.itemconfig(hVoltageRecLabel,text=hVoltage.get())
+	#hVoltageCanvas.itemconfig(hVoltageRecLabel,text=hVoltage.get())
 
 	#Update the alarms
 	alarmText.config(state=tk.NORMAL)
@@ -120,6 +120,36 @@ def update():
 			acknButton.state(["!disabled"])
 	alarmText.config(state=tk.DISABLED)
 	j = j + 1
+
+
+class BarMeter(object):
+	def __init__(self,Frame):
+		self.Frame = Frame
+
+	def makeMeter(self,x,y):
+		hVoltage = tk.StringVar()
+
+		hVoltageRec = []
+
+		#Build hVoltageGuage and add Static Components
+		hVoltageCanvas = tk.Canvas(self.Frame,width=500, height=100)
+		hVoltageCanvas.grid(column=0, row =0, sticky=(tk.NW))
+		hVoltageRec.append(hVoltageCanvas.create_rectangle(20,20,40,50))
+		hVoltageRec.append(hVoltageCanvas.create_rectangle(40,20,60,50))
+		hVoltageRec.append(hVoltageCanvas.create_rectangle(60,20,80,50))
+		hVoltageRec.append(hVoltageCanvas.create_rectangle(80,20,100,50))
+		hVoltageRec.append(hVoltageCanvas.create_rectangle(100,20,120,50))
+		hVoltageRec.append(hVoltageCanvas.create_rectangle(120,20,140,50))
+		hVoltageRec.append(hVoltageCanvas.create_rectangle(140,20,160,50))
+		hVoltageRec.append(hVoltageCanvas.create_rectangle(160,20,180,50))
+		hVoltageRec.append(hVoltageCanvas.create_rectangle(180,20,200,50))
+		hVoltageRec.append(hVoltageCanvas.create_rectangle(200,20,220,50))
+
+		hVoltageRecTitle = hVoltageCanvas.create_text(125,10,text="House Bank Voltage")
+		hVoltageRecLabel = hVoltageCanvas.create_text(230,35,text=hVoltage.get(), anchor = tk.W)
+		hVoltageRecLabelMin = hVoltageCanvas.create_text(20,60,text="11.7 V")
+		hVoltageRecLabelMax = hVoltageCanvas.create_text(220,60,text="12.8 V")
+
 
 if __name__ == "__main__":
 
@@ -158,28 +188,11 @@ if __name__ == "__main__":
 	menubar.add_command(label="Quit!", command=root.quit)
 	root.config(menu=menubar)
 
-	hVoltage = tk.StringVar()
+	hvoltageG = BarMeter(mainframe)
+	hvoltageG.makeMeter()
 
-	hVoltageRec = []
-
-	#Build hVoltageGuage and add Static Components
-	hVoltageCanvas = tk.Canvas(mainframe,width=500, height=100)
-	hVoltageCanvas.grid(column=0, row =0, sticky=(tk.NW))
-	hVoltageRec.append(hVoltageCanvas.create_rectangle(20,20,40,50))
-	hVoltageRec.append(hVoltageCanvas.create_rectangle(40,20,60,50))
-	hVoltageRec.append(hVoltageCanvas.create_rectangle(60,20,80,50))
-	hVoltageRec.append(hVoltageCanvas.create_rectangle(80,20,100,50))
-	hVoltageRec.append(hVoltageCanvas.create_rectangle(100,20,120,50))
-	hVoltageRec.append(hVoltageCanvas.create_rectangle(120,20,140,50))
-	hVoltageRec.append(hVoltageCanvas.create_rectangle(140,20,160,50))
-	hVoltageRec.append(hVoltageCanvas.create_rectangle(160,20,180,50))
-	hVoltageRec.append(hVoltageCanvas.create_rectangle(180,20,200,50))
-	hVoltageRec.append(hVoltageCanvas.create_rectangle(200,20,220,50))
-
-	hVoltageRecTitle = hVoltageCanvas.create_text(125,10,text="House Bank Voltage")
-	hVoltageRecLabel = hVoltageCanvas.create_text(230,35,text=hVoltage.get(), anchor = tk.W)
-	hVoltageRecLabelMin = hVoltageCanvas.create_text(20,60,text="11.7 V")
-	hVoltageRecLabelMax = hVoltageCanvas.create_text(220,60,text="12.8 V")
+	sVoltageG = BarMeter(mainframe)
+	sVoltageG.makeMeter()
 
 
 	alarmFrame = ttk.LabelFrame(mainframe, text="Alarm Summary",padding=(6, 6, 12, 12))
