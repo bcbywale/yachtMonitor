@@ -4,6 +4,7 @@ import time
 from tkinter import ttk
 
 import serial
+import socket
 
 import tkinter as tk
 import tkinter.scrolledtext as tkst
@@ -15,7 +16,8 @@ configFilename = os.path.join(configDir, 'config.xml')
 configTree = ET.parse(configFilename)
 configRoot = configTree.getroot()
 
-connectionStatus = "offline"
+socketDebug = True
+
 
 def read_from_port(ser, hVoltage):
 		while True:
@@ -125,31 +127,22 @@ def update():
 class BarMeter(object):
 	def __init__(self,Frame):
 		self.Frame = Frame
+		self.barCanvas = tk.Canvas(self.Frame,width=250, height=75)
 
-	def makeMeter(self,x,y):
+	def makeMeter(self,x,y,title):
 		hVoltage = tk.StringVar()
 
-		hVoltageRec = []
-
 		#Build hVoltageGuage and add Static Components
-		hVoltageCanvas = tk.Canvas(self.Frame,width=500, height=100)
-		hVoltageCanvas.grid(column=0, row =0, sticky=(tk.NW))
-		hVoltageRec.append(hVoltageCanvas.create_rectangle(20,20,40,50))
-		hVoltageRec.append(hVoltageCanvas.create_rectangle(40,20,60,50))
-		hVoltageRec.append(hVoltageCanvas.create_rectangle(60,20,80,50))
-		hVoltageRec.append(hVoltageCanvas.create_rectangle(80,20,100,50))
-		hVoltageRec.append(hVoltageCanvas.create_rectangle(100,20,120,50))
-		hVoltageRec.append(hVoltageCanvas.create_rectangle(120,20,140,50))
-		hVoltageRec.append(hVoltageCanvas.create_rectangle(140,20,160,50))
-		hVoltageRec.append(hVoltageCanvas.create_rectangle(160,20,180,50))
-		hVoltageRec.append(hVoltageCanvas.create_rectangle(180,20,200,50))
-		hVoltageRec.append(hVoltageCanvas.create_rectangle(200,20,220,50))
+		self.barCanvas.grid(column=x, sticky=(tk.NW))
+		self.barCanvas.create_rectangle(20,20,220,50)
+		self.barCanvas.create_text(125,10,text=title)
+		self.barCanvas.create_text(20,60,text="11.7 V")
+		self.barCanvas.create_text(220,60,text="12.8 V")
 
-		hVoltageRecTitle = hVoltageCanvas.create_text(125,10,text="House Bank Voltage")
-		hVoltageRecLabel = hVoltageCanvas.create_text(230,35,text=hVoltage.get(), anchor = tk.W)
-		hVoltageRecLabelMin = hVoltageCanvas.create_text(20,60,text="11.7 V")
-		hVoltageRecLabelMax = hVoltageCanvas.create_text(220,60,text="12.8 V")
-
+	def update(self):
+		self.barCanvas.create_text(230,35,text="test", anchor = tk.W)
+		value = 110 #add code to scale variable based on min and max.
+		self.barCanvas.create_rectangle(21,21,value,50,fill="green",width=0)
 
 if __name__ == "__main__":
 
@@ -166,8 +159,12 @@ if __name__ == "__main__":
 		connectionStatus = "offline"
 
 	if connectionStatus == "offline":
-		#connection.alarm("No connection")
-		pass
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.bind((TCP_IP, TCP_PORT))
+		s.listen(1)
+		conn, addr = s.accept()
+		print 'Connection address:', addr
+
 
 	root = tk.Tk()
 	root.grid_rowconfigure(0,weight=1)
@@ -189,14 +186,17 @@ if __name__ == "__main__":
 	root.config(menu=menubar)
 
 	hvoltageG = BarMeter(mainframe)
-	hvoltageG.makeMeter()
+	hvoltageG.makeMeter(0,0,"House Voltage")
+	hvoltageG.update()
+
+	hAmpG = BarMeter(mainframe)
+	hAmpG.makeMeter(0,1,"House Amp Draw")
 
 	sVoltageG = BarMeter(mainframe)
-	sVoltageG.makeMeter()
-
+	sVoltageG.makeMeter(0,2,"Start Voltage")
 
 	alarmFrame = ttk.LabelFrame(mainframe, text="Alarm Summary",padding=(6, 6, 12, 12))
-	alarmFrame.grid(column=0,row=2, sticky=tk.NSEW, columnspan=2)
+	alarmFrame.grid(column=0, sticky=tk.NSEW, columnspan=2) #no row called out means it will be first unused row
 	alarmFrame.grid_columnconfigure(0, weight=1)
 	#alarmFrame.grid_columnconfigure(1, weight=1)
 	alarmFrame.grid_rowconfigure(0, weight=1)
