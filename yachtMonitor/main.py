@@ -140,7 +140,11 @@ def update():
 
 	if hVoltageFloat < 12.0:
 		alarms.append(Alarm("House bank voltage low.\n",1,0,1,False,"Monitor"))
+<<<<<<< HEAD
 
+=======
+	
+>>>>>>> origin/master
 	print(hVoltageFloat)
 	#Update the guages
 	if hVoltageFloat >12.7:
