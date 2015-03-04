@@ -20,10 +20,11 @@ connectionStatus = "offline"
 hVoltageFloat = 0.0
 
 def read_from_port(ser, hVoltage):
-		while True:
-			reading = ser.readline().decode()
-			hVoltage.set(reading)
-			hVoltageFloat = float(reading)
+	global hVoltageFloat
+	while True:
+		reading = ser.readline().decode()
+		hVoltage.set(reading)
+		hVoltageFloat = float(reading)
 
 def loadConfig():
 	global configTree, configRoot
@@ -46,6 +47,47 @@ def configure():
 
 #Before we do anything, let's load the configuration
 loadConfig()
+
+class AlarmPoint(object):
+	def __init__(self,name = None, value= None, lower = None, upper= None, textLow = None, textHigh=None, status=None, type=None, buzzer=None, display = None, source = None ):
+		self.name = name
+		self.value = value
+		self.lower = lower
+		self.upper = upper
+		self.status = 0
+		self.textLow = textLow
+		self.textHigh = textHigh
+		self.status = status #is alarm still active? 1 yes 0 no
+		self.type = type #is alarm a warning or a fault, faults cannot be removed by acknoledgement, 1 is fault, 0 is warning
+		self.buzzer = buzzer #Should this alarm cause the buzzer to ring
+		self.display = display #has this been displayed?
+		self.source = source #did this alarm come from the sensor or the monitor
+
+	def check(self):
+		if self.value < self.lower:
+			self.status = -1
+		elif self.value > self.upper:
+			self.status = 1
+		else:
+			self.value = 0
+		return self.value
+
+	def ack():
+		if type == 1:
+			status = 0
+			buzzer = 0
+		else:
+			if self.check(self)
+			buzzer = 0
+
+	def description(self):
+		descString = ""
+		if self.type == 0:
+			descString ="  Fault: "
+		if self.type == 1:
+			descString ="Warning: "
+		descString = descString + self.text
+		return descString
 
 #Alarm Class TODO: Going to need to expand class to be an alarm point so that alarms are associated with variables!
 class Alarm(object):
@@ -95,37 +137,50 @@ def update():
 
 	#Update the values
 	hVoltageCanvas.itemconfig(hVoltageRecLabel,text=hVoltage.get())
-	
+
 	if hVoltageFloat < 12.0:
 		alarms.append(Alarm("House bank voltage low.\n",1,0,1,False,"Monitor"))
- 
+
+	print(hVoltageFloat)
 	#Update the guages
 	if hVoltageFloat >12.7:
-		recColor = 10
+		recColorIdx = 10
+		recColor = "green"
 	elif hVoltageFloat >12.6:
-		recColor = 9
+		recColorIdx  = 9
+		recColor = "green"
 	elif hVoltageFloat >12.5:
-		recColor = 8
+		recColorIdx  = 8
+		recColor = "green"
 	elif hVoltageFloat >12.4:
-		recColor = 7
+		recColorIdx  = 7
+		recColor = "green"
 	elif hVoltageFloat >12.3:
-		recColor = 6
+		recColorIdx = 6
+		recColor = "green"
 	elif hVoltageFloat >12.2:
-		recColor = 5
+		recColorIdx  = 5
+		recColor = "yellow"
 	elif hVoltageFloat >12.1:
-		recColor = 4
+		recColorIdx  = 4
+		recColor = "red"
 	elif hVoltageFloat >12.0:
-		recColor = 3
+		recColorIdx  = 3
+		recColor = "red"
 	elif hVoltageFloat >11.9:
-		recColor = 2
+		recColorIdx  = 2
+		recColor = "red"
 	elif hVoltageFloat >11.8:
-		recColor = 1
+		recColorIdx  = 1
+		recColor = "red"
 	else:
-		recColor = 0
- 		
-	for i, rec in enumerate(hVoltageRec): 
-		if i < recColor: 
-			hVoltageCanvas.itemconfig(hVoltageRec[i],fill="green")
+		recColorIdx = 0
+
+	for i, rec in enumerate(hVoltageRec):
+		if i < recColorIdx :
+			hVoltageCanvas.itemconfig(hVoltageRec[i],fill=recColor)
+		else:
+			hVoltageCanvas.itemconfig(hVoltageRec[i],fill="white")
 
 	#Update the alarms
 	alarmText.config(state=tk.NORMAL)
@@ -147,8 +202,6 @@ if __name__ == "__main__":
 
 	#generator list of alarms
 	alarms = []
-
-	hVoltageFloat = 12.0
 
 	#Setup Serial connection based on config file
 	try:
@@ -182,9 +235,9 @@ if __name__ == "__main__":
 	root.config(menu=menubar)
 
 	hVoltage = tk.StringVar()
-	
+
 	hVoltageRec = []
-	
+
 	#Build hVoltageGuage and add Static Components
 	hVoltageCanvas = tk.Canvas(mainframe,width=500, height=100)
 	hVoltageCanvas.grid(column=0, row =0, sticky=(tk.NW))
@@ -198,9 +251,9 @@ if __name__ == "__main__":
 	hVoltageRec.append(hVoltageCanvas.create_rectangle(160,20,180,50))
 	hVoltageRec.append(hVoltageCanvas.create_rectangle(180,20,200,50))
 	hVoltageRec.append(hVoltageCanvas.create_rectangle(200,20,220,50))
-	
+
 	hVoltageRecTitle = hVoltageCanvas.create_text(125,10,text="House Bank Voltage")
-	hVoltageRecLabel = hVoltageCanvas.create_text(230,35,text=hVoltage.get(), anchor = tk.W)
+	hVoltageRecLabel = hVoltageCanvas.create_text(230,50,text=hVoltage.get(), anchor = tk.W)
 	hVoltageRecLabelMin = hVoltageCanvas.create_text(20,60,text="11.7 V")
 	hVoltageRecLabelMax = hVoltageCanvas.create_text(220,60,text="12.8 V")
 
