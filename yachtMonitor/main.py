@@ -4,35 +4,42 @@ import time
 from tkinter import ttk
 
 import serial
-import socket
+import socketserver
 
 import tkinter as tk
 import tkinter.scrolledtext as tkst
 import xml.etree.ElementTree as ET
-
 
 configDir = os.path.dirname(__file__)
 configFilename = os.path.join(configDir, 'config.xml')
 configTree = ET.parse(configFilename)
 configRoot = configTree.getroot()
 
-socketDebug = True
-
-
+#Serial Port Thread
 def read_from_port(ser, hVoltage):
 		while True:
 			reading = ser.readline().decode()
+			print(reading)
 
-			hVoltage.set(reading)
-			hVoltageFloat.value = float(reading)
+#TCPhandler Class
+class TCPHandler(socketserver.BaseRequestHandler):
+	def handle(self):
+		data = self.request.recv(2048).strip()
+		alarmText.insert(1.0, "hello")
+		print(data)
+		
+#wrapper to start a threaded TCP server
+class ThreadedTCPServer(socketserver.ThreadingMixIn,socketserver.TCPServer):
+	pass
 
+#Function to read xml configuration
 def loadConfig():
 	global configTree, configRoot
 	configTree = ET.parse(configFilename)
 	configRoot = configTree.getroot()
 
+#Configure GUI
 def configure():
-
 	window = tk.Toplevel()
 	label = tk.Label(window,text="Configuration")
 	label.pack(side="top", fill="both", padx=10, pady=10)
@@ -44,9 +51,6 @@ def configure():
 	#DEBUG
 	for child in configRoot:
 		print(child.tag, child.attrib)
-
-#Before we do anything, let's load the configuration
-loadConfig()
 
 #Alarm Class TODO: Going to need to expand class to be an alarm point so that alarms are associated with variables!
 class AlarmPoint(object):
@@ -91,10 +95,6 @@ alarmPoints = []
 #define external alarms
 hVoltage = AlarmPoint(0.0,11.8,12.7,"House bank voltage low.\n",1,0,1,False,"Monitor")
 alarmPoints.append(hVoltage)
-
-#define internal alarms
-connectionStatus = AlarmPoint
-
 
 j = 0
 
@@ -144,7 +144,11 @@ class BarMeter(object):
 		value = 110 #add code to scale variable based on min and max.
 		self.barCanvas.create_rectangle(21,21,value,50,fill="green",width=0)
 
+HOST, PORT = "localhost", 9999
+
 if __name__ == "__main__":
+	#Before we do anything, let's load the configuration
+	loadConfig()
 
 	#generator list of alarms
 	alarms = []
@@ -155,17 +159,10 @@ if __name__ == "__main__":
 		print("connected to: " + ser.portstr)
 		connectionStatus = "serial"
 	except serial.SerialException:
-		print("No serial connection available")
-		connectionStatus = "offline"
-
-	if connectionStatus == "offline":
-		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		s.bind((TCP_IP, TCP_PORT))
-		s.listen(1)
-		conn, addr = s.accept()
-		print 'Connection address:', addr
-
-
+		connectionStatus = "TCP"
+		print("No serial connection available. Trying TCP")
+		t = ThreadedTCPServer((HOST, PORT), TCPHandler)
+	
 	root = tk.Tk()
 	root.grid_rowconfigure(0,weight=1)
 	root.grid_columnconfigure(0,weight=1)
@@ -182,7 +179,7 @@ if __name__ == "__main__":
 
 	menubar = tk.Menu(root)
 	menubar.add_command(label="Configure", command=configure)
-	menubar.add_command(label="Quit!", command=root.quit)
+	menubar.add_command(label="Quit!", command=root.quit())
 	root.config(menu=menubar)
 
 	hvoltageG = BarMeter(mainframe)
@@ -212,12 +209,18 @@ if __name__ == "__main__":
 
 	timeLabel = ttk.Label(mainframe)
 	timeLabel.grid(column=1,row=4,sticky=(tk.E))
-
+	
 	#if serial connection is available start thread listening to it
 	if connectionStatus == "serial":
 		thread = threading.Thread(target=read_from_port, args=(ser, alarmPoints))
 		thread.daemon = True
 		thread.start()
-
+	#if serial connection is not available start thread listening to TCP server
+	elif connectionStatus == "TCP":
+		server_thread = threading.Thread(target=t.serve_forever)
+		server_thread.daemon = True
+		server_thread.start()
+		print("Server loop running in thread:", server_thread.name)
+		
 	update()
 	root.mainloop()
