@@ -15,6 +15,8 @@ configFilename = os.path.join(configDir, 'config.xml')
 configTree = ET.parse(configFilename)
 configRoot = configTree.getroot()
 
+dataStr = tk.StringVar
+
 #Serial Port Thread
 def read_from_port(ser, hVoltage):
 		while True:
@@ -23,10 +25,12 @@ def read_from_port(ser, hVoltage):
 
 #TCPhandler Class
 class TCPHandler(socketserver.BaseRequestHandler):
+	global dataStr
+	
 	def handle(self):
 		data = self.request.recv(2048).strip()
-		alarmText.insert(1.0, "hello")
-		print(data)
+		message = str(data)
+		dataStr.set(data)
 		
 #wrapper to start a threaded TCP server
 class ThreadedTCPServer(socketserver.ThreadingMixIn,socketserver.TCPServer):
@@ -99,13 +103,12 @@ alarmPoints.append(hVoltage)
 j = 0
 
 def update():
-	global j
+	global j, dataStr
 
 	#Update the time
 	timeStr = time.strftime("%I:%M:%S",time.localtime(time.time()))
 	timeLabel.configure(text="Time: " +timeStr)
-	timeLabel.after(1000, update)
-
+	
 	#Update the values
 	#hVoltageCanvas.itemconfig(hVoltageRecLabel,text=hVoltage.get())
 
@@ -122,7 +125,8 @@ def update():
 			acknButton.state(["!disabled"])
 	alarmText.config(state=tk.DISABLED)
 	j = j + 1
-
+	
+	timeLabel.after(1000, update)
 
 class BarMeter(object):
 	def __init__(self,Frame):
@@ -200,13 +204,18 @@ if __name__ == "__main__":
 
 	alarmText = tkst.ScrolledText(alarmFrame,width=100,height=3)
 	alarmText.grid(row=0,column=0,sticky=tk.NSEW)
-
+	
+	
 	acknButtonStyle = ttk.Style()
 	acknButtonStyle.configure('acknButton.TButton', foreground="red")
 
 	acknButton = ttk.Button(alarmFrame,  text="Ackn", command=reviewAlarms, state=tk.DISABLED)
 	acknButton.grid(row=0, column=1, sticky=tk.NS )
 
+	dataLabel = ttk.Label(mainframe)
+	dataLabel.grid(column = 0, row = 4, sticky=(tk.W))
+	dataLabel.configure(textvariable=dataStr)
+	
 	timeLabel = ttk.Label(mainframe)
 	timeLabel.grid(column=1,row=4,sticky=(tk.E))
 	
