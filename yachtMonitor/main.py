@@ -15,7 +15,7 @@ configFilename = os.path.join(configDir, 'config.xml')
 configTree = ET.parse(configFilename)
 configRoot = configTree.getroot()
 
-dataStr = tk.StringVar
+
 
 #Serial Port Thread
 def read_from_port(ser, hVoltage):
@@ -26,12 +26,15 @@ def read_from_port(ser, hVoltage):
 #TCPhandler Class
 class TCPHandler(socketserver.BaseRequestHandler):
 	global dataStr
-	
+
 	def handle(self):
-		data = self.request.recv(2048).strip()
-		message = str(data)
+		data = str(self.request.recv(2048).strip())
 		dataStr.set(data)
-		
+		hvoltageG.valuetext.set(data)
+		parsedData = data.split(",")
+		hVoltage.value = float(parsedData[1])
+		hvoltageG.update(hVoltage.value)
+
 #wrapper to start a threaded TCP server
 class ThreadedTCPServer(socketserver.ThreadingMixIn,socketserver.TCPServer):
 	pass
@@ -108,7 +111,7 @@ def update():
 	#Update the time
 	timeStr = time.strftime("%I:%M:%S",time.localtime(time.time()))
 	timeLabel.configure(text="Time: " +timeStr)
-	
+
 	#Update the values
 	#hVoltageCanvas.itemconfig(hVoltageRecLabel,text=hVoltage.get())
 
@@ -125,28 +128,31 @@ def update():
 			acknButton.state(["!disabled"])
 	alarmText.config(state=tk.DISABLED)
 	j = j + 1
-	
+
 	timeLabel.after(1000, update)
 
 class BarMeter(object):
 	def __init__(self,Frame):
 		self.Frame = Frame
 		self.barCanvas = tk.Canvas(self.Frame,width=250, height=75)
+		self.valuetext = tk.StringVar()
 
-	def makeMeter(self,x,y,title):
+	def makeMeter(self,x,y,title,min,max):
 		hVoltage = tk.StringVar()
 
 		#Build hVoltageGuage and add Static Components
 		self.barCanvas.grid(column=x, sticky=(tk.NW))
 		self.barCanvas.create_rectangle(20,20,220,50)
 		self.barCanvas.create_text(125,10,text=title)
-		self.barCanvas.create_text(20,60,text="11.7 V")
-		self.barCanvas.create_text(220,60,text="12.8 V")
+		self.barCanvas.create_text(20,60,text=min)
+		self.barCanvas.create_text(220,60,text=max)
+		self.valueFill = self.barCanvas.create_rectangle(21,21,220,50,fill="green",width=0)
 
-	def update(self):
-		self.barCanvas.create_text(230,35,text="test", anchor = tk.W)
-		value = 110 #add code to scale variable based on min and max.
-		self.barCanvas.create_rectangle(21,21,value,50,fill="green",width=0)
+	def update(self, value):
+		print(value)
+		barValue = 20+((value-11.7)/(12.8-11.7))*(220-20)
+		print(barValue)
+		self.barCanvas.coords(self.valueFill,21,21,barValue,50)
 
 HOST, PORT = "localhost", 9999
 
@@ -166,7 +172,7 @@ if __name__ == "__main__":
 		connectionStatus = "TCP"
 		print("No serial connection available. Trying TCP")
 		t = ThreadedTCPServer((HOST, PORT), TCPHandler)
-	
+
 	root = tk.Tk()
 	root.grid_rowconfigure(0,weight=1)
 	root.grid_columnconfigure(0,weight=1)
@@ -187,14 +193,14 @@ if __name__ == "__main__":
 	root.config(menu=menubar)
 
 	hvoltageG = BarMeter(mainframe)
-	hvoltageG.makeMeter(0,0,"House Voltage")
-	hvoltageG.update()
+	hvoltageG.makeMeter(0,0,"House Voltage","11.7 V","12.8 V")
+	hvoltageG.update(hVoltage.value)
 
 	hAmpG = BarMeter(mainframe)
-	hAmpG.makeMeter(0,1,"House Amp Draw")
+	hAmpG.makeMeter(0,1,"House Amp Draw","0 A","50 A")
 
 	sVoltageG = BarMeter(mainframe)
-	sVoltageG.makeMeter(0,2,"Start Voltage")
+	sVoltageG.makeMeter(0,2,"Start Voltage","11.7 V","12.8 V")
 
 	alarmFrame = ttk.LabelFrame(mainframe, text="Alarm Summary",padding=(6, 6, 12, 12))
 	alarmFrame.grid(column=0, sticky=tk.NSEW, columnspan=2) #no row called out means it will be first unused row
@@ -204,21 +210,22 @@ if __name__ == "__main__":
 
 	alarmText = tkst.ScrolledText(alarmFrame,width=100,height=3)
 	alarmText.grid(row=0,column=0,sticky=tk.NSEW)
-	
-	
+
+
 	acknButtonStyle = ttk.Style()
 	acknButtonStyle.configure('acknButton.TButton', foreground="red")
 
 	acknButton = ttk.Button(alarmFrame,  text="Ackn", command=reviewAlarms, state=tk.DISABLED)
 	acknButton.grid(row=0, column=1, sticky=tk.NS )
 
+	dataStr = tk.StringVar()
 	dataLabel = ttk.Label(mainframe)
 	dataLabel.grid(column = 0, row = 4, sticky=(tk.W))
 	dataLabel.configure(textvariable=dataStr)
-	
+
 	timeLabel = ttk.Label(mainframe)
 	timeLabel.grid(column=1,row=4,sticky=(tk.E))
-	
+
 	#if serial connection is available start thread listening to it
 	if connectionStatus == "serial":
 		thread = threading.Thread(target=read_from_port, args=(ser, alarmPoints))
@@ -230,6 +237,6 @@ if __name__ == "__main__":
 		server_thread.daemon = True
 		server_thread.start()
 		print("Server loop running in thread:", server_thread.name)
-		
+
 	update()
 	root.mainloop()
