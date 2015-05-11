@@ -125,7 +125,7 @@ class AlarmPoint(object):
 				self.display = True
 		else:
 			self.status = 0
-			self.barCanvas.itemconfigure(fill="green")
+			self.barCanvas.itemconfigure(self.valueFill,fill="green")
 			self.dislpay = False
 
 		if self.meterType == "bar":
