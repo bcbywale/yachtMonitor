@@ -115,13 +115,13 @@ class AlarmPoint(object):
 			self.status = 1
 			self.barCanvas.itemconfigure(self.valueFill,fill="red")
 			if self.display == False:
-				#display alarm
+				alarmText.insert(1.0, self.lowerText)
 				self.display = True
 		elif self.value > self.upperLimit and self.upperText != None:
 			self.status = 1
 			self.barCanvas.itemconfigure(self.valueFill,fill="red")
 			if self.display == False:
-				#display alarm
+				alarmText.insert(1.0, self.upperText)
 				self.display = True
 		else:
 			self.status = 0
@@ -149,11 +149,11 @@ def reviewAlarms():
 alarmPoints = []
 
 #define external alarms
-hVoltage = AlarmPoint(0.0,11.8,12.7,"V","bar","House bank voltage low.\n","High Voltage alarm.",1,0,1,False,"Monitor")
+hVoltage = AlarmPoint(0.0,11.8,12.7,"V","bar","House bank voltage low.\n","House bank voltage high.",1,0,1,False,"Monitor")
 alarmPoints.append(hVoltage)
 hAmp = AlarmPoint(0.0,0,50,"A","bar","Low A alarm.","House amp draw exceeding 50 A\n",1,0,1,False,"Monitor")
 alarmPoints.append(hAmp)
-sVoltage = AlarmPoint(0.0,11.8,12.7,"V","bar","Starting bank voltage low.\n","High Voltage alarm.",1,0,1,False,"Monitor")
+sVoltage = AlarmPoint(0.0,11.8,12.7,"V","bar","Starting bank voltage low.\n","Starting bank voltage high.",1,0,1,False,"Monitor")
 alarmPoints.append(sVoltage)
 
 j = 0
