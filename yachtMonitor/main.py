@@ -81,9 +81,9 @@ class AlarmPoint(object):
 	def ack(self):
 		if self.alarmType == 1:
 			status = 0
-			buzzer = 0
+			buzzer = False
 		else:
-			buzzer = 0
+			buzzer = False
 
 	def description(self):
 		descString = ""
@@ -116,17 +116,21 @@ class AlarmPoint(object):
 			self.barCanvas.itemconfigure(self.valueFill,fill="red")
 			if self.display == False:
 				alarmText.insert(1.0, self.lowerText)
+				acknButton.state(["!disabled"])
 				self.display = True
+				self.buzzer = True
 		elif self.value > self.upperLimit and self.upperText != None:
 			self.status = 1
 			self.barCanvas.itemconfigure(self.valueFill,fill="red")
 			if self.display == False:
 				alarmText.insert(1.0, self.upperText)
 				self.display = True
+				self.buzzer = True
 		else:
 			self.status = 0
 			self.barCanvas.itemconfigure(self.valueFill,fill="green")
 			self.dislpay = False
+			self.buzzer = False
 
 		if self.meterType == "bar":
 			barValue = 20+((self.value-self.lowerLimit)/(self.upperLimit-self.lowerLimit))*(220-20)
@@ -138,22 +142,22 @@ class AlarmPoint(object):
 
 #Fucntion to review alarms when acknoleg buttons is pressed
 def reviewAlarms():
-	for item in alarms:
-		if item.display == True:
-			item.buzzer = 0
-			if item.type == 1:
-				item.status = 0
+	for alarm in alarmPoints:
+		if alarm.buzzer  == True:
+			alarm.buzzer = False
+			alarm.display = False
+	alarmText.delete(,"end")
 	acknButton.config(style='TButton')
 	acknButton.state(["disabled"])
 
 alarmPoints = []
 
 #define external alarms
-hVoltage = AlarmPoint(0.0,11.8,12.7,"V","bar","House bank voltage low.\n","House bank voltage high.",1,0,1,False,"Monitor")
+hVoltage = AlarmPoint(0.0,11.8,12.7,"V","bar","House bank voltage low.\n","House bank voltage high.",1,0,False,False,"Monitor")
 alarmPoints.append(hVoltage)
-hAmp = AlarmPoint(0.0,0,50,"A","bar","Low A alarm.","House amp draw exceeding 50 A\n",1,0,1,False,"Monitor")
+hAmp = AlarmPoint(0.0,0,50,"A","bar","Low A alarm.","House amp draw exceeding 50 A\n",1,0,False,False,"Monitor")
 alarmPoints.append(hAmp)
-sVoltage = AlarmPoint(0.0,11.8,12.7,"V","bar","Starting bank voltage low.\n","Starting bank voltage high.",1,0,1,False,"Monitor")
+sVoltage = AlarmPoint(0.0,11.8,12.7,"V","bar","Starting bank voltage low.\n","Starting bank voltage high.",1,0,False,False,"Monitor")
 alarmPoints.append(sVoltage)
 
 j = 0
@@ -164,6 +168,13 @@ def update():
 	#Update the time
 	timeStr = time.strftime("%I:%M:%S",time.localtime(time.time()))
 	timeLabel.configure(text="Time: " +timeStr)
+	for alarm in alarmPoints:
+		if alarm.buzzer == True:
+			color = alarmText.cget("background")
+			next_color = "white" if color == "red" else "red"
+			alarmText.config(background=next_color)
+		else:
+			alarmText.config(background = "white")
 
 	#Update the values
 	#hVoltageCanvas.itemconfig(hVoltageRecLabel,text=hVoltage.get())
